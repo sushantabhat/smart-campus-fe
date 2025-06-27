@@ -28,6 +28,12 @@ const Header: React.FC = () => {
     setIsUserMenuOpen(false);
   };
 
+  // Get display name from user data
+  const getDisplayName = () => {
+    if (!user) return '';
+    return user.displayName || user.fullName || `${user.firstName} ${user.lastName}`;
+  };
+
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,7 +70,7 @@ const Header: React.FC = () => {
                   className="flex items-center space-x-2 text-gray-700 hover:text-blue-600"
                 >
                   <User className="h-5 w-5" />
-                  <span className="text-sm font-medium">{user.name}</span>
+                  <span className="text-sm font-medium">{getDisplayName()}</span>
                 </button>
                 <AnimatePresence>
                   {isUserMenuOpen && (
@@ -158,7 +164,7 @@ const Header: React.FC = () => {
                   {isAuthenticated && user ? (
                     <>
                       <div className="px-3 py-2 text-base font-medium text-gray-900">
-                        {user.name}
+                        {getDisplayName()}
                       </div>
                       <Link
                         to="/dashboard"

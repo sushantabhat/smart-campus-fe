@@ -14,13 +14,13 @@ interface LoginForm {
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const { login } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
   
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
@@ -28,12 +28,30 @@ const Login: React.FC = () => {
     try {
       const success = await login(data.email, data.password);
       if (success) {
-        navigate('/');
+        // Get user data from store to determine role
+        const user = useAuthStore.getState().user;
+        if (user) {
+          // Redirect based on user role
+          switch (user.role) {
+            case 'admin':
+              navigate('/admin');
+              break;
+            case 'faculty':
+              navigate('/faculty');
+              break;
+            case 'student':
+              navigate('/student');
+              break;
+            default:
+              navigate('/dashboard');
+          }
+        }
       } else {
         setLoginError('Invalid email or password');
       }
     } catch (error) {
       setLoginError('An error occurred during login');
+      console.error('Login failed:', error);
     }
   };
 
@@ -146,10 +164,10 @@ const Login: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
 
             <div className="text-center">
@@ -168,9 +186,9 @@ const Login: React.FC = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600 mb-2">Demo Credentials:</p>
             <div className="space-y-1 text-xs text-gray-500">
-              <p><strong>Admin:</strong> admin@campus.edu / password123</p>
-              <p><strong>Faculty:</strong> faculty@campus.edu / password123</p>
-              <p><strong>Student:</strong> student@campus.edu / password123</p>
+              <p><strong>Admin:</strong> admin@smartcampus.com / Admin123@#</p>
+              <p><strong>Faculty:</strong> faculty@smartcampus.com / Faculty123@#</p>
+              <p><strong>Student:</strong> student@smartcampus.com / Student123@#</p>
             </div>
           </div>
         </div>

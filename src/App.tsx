@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { useAuthInit } from './hooks/useAuthInit';
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Admin/AdminLayout';
 import FacultyLayout from './components/Faculty/FacultyLayout';
@@ -25,6 +26,9 @@ import Analytics from './pages/Admin/Analytics';
 import Settings from './pages/Admin/Settings';
 
 function App() {
+  // Initialize authentication state
+  useAuthInit();
+
   return (
     <Router>
       <Routes>
