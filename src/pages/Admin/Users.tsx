@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Eye, Filter, UserCheck, UserX, ChevronLeft,
 import { useUsers, useDeleteUser, useActivateUser, useDeactivateUser } from '../../api/hooks/useUsers';
 import { UserData } from '../../api/types/users';
 import LoadingSpinner from '../../components/Layout/LoadingSpinner';
+import AddUserModal from '../../components/Admin/AddUserModal';
 
 const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +11,7 @@ const Users: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
   // TanStack Query hooks
   const { data, isLoading, error } = useUsers(currentPage, pageSize);
@@ -53,7 +55,7 @@ const Users: React.FC = () => {
     return user.email.charAt(0).toUpperCase();
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = users.filter((user: UserData) => {
     const displayName = getDisplayName(user);
     const matchesSearch = displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -73,7 +75,7 @@ const Users: React.FC = () => {
     if (selectedUsers.length === filteredUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map(user => user._id));
+      setSelectedUsers(filteredUsers.map((user: UserData) => user._id));
     }
   };
 
@@ -158,7 +160,10 @@ const Users: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-600">Manage all users in the system</p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+        <button 
+          onClick={() => setIsAddUserModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add User
         </button>
@@ -445,6 +450,12 @@ const Users: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add User Modal */}
+      <AddUserModal 
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+      />
     </div>
   );
 };
