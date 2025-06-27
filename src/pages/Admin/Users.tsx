@@ -1,61 +1,61 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Filter } from 'lucide-react';
-import { User } from '../../types';
+import { Plus, Search, Edit, Trash2, Eye, Filter, UserCheck, UserX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useUsers, useDeleteUser, useActivateUser, useDeactivateUser } from '../../api/hooks/useUsers';
+import { UserData } from '../../api/types/users';
+import LoadingSpinner from '../../components/Layout/LoadingSpinner';
 
 const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  // Mock users data
-  const users: User[] = [
-    {
-      id: '1',
-      email: 'admin@campus.edu',
-      name: 'Admin User',
-      role: 'admin',
-      createdAt: new Date('2024-01-01'),
-    },
-    {
-      id: '2',
-      email: 'faculty@campus.edu',
-      name: 'Dr. Sarah Johnson',
-      role: 'faculty',
-      department: 'Computer Science',
-      employeeId: 'FAC001',
-      createdAt: new Date('2024-01-15'),
-    },
-    {
-      id: '3',
-      email: 'student@campus.edu',
-      name: 'John Smith',
-      role: 'student',
-      department: 'Computer Science',
-      studentId: 'STU2024001',
-      createdAt: new Date('2024-02-01'),
-    },
-    {
-      id: '4',
-      email: 'jane.doe@campus.edu',
-      name: 'Jane Doe',
-      role: 'student',
-      department: 'Mathematics',
-      studentId: 'STU2024002',
-      createdAt: new Date('2024-02-15'),
-    },
-    {
-      id: '5',
-      email: 'prof.brown@campus.edu',
-      name: 'Prof. Michael Brown',
-      role: 'faculty',
-      department: 'Physics',
-      employeeId: 'FAC002',
-      createdAt: new Date('2024-01-20'),
-    },
-  ];
+  // TanStack Query hooks
+  const { data, isLoading, error } = useUsers(currentPage, pageSize);
+  const deleteUserMutation = useDeleteUser();
+  const activateUserMutation = useActivateUser();
+  const deactivateUserMutation = useDeactivateUser();
+
+  // Extract users and pagination from data
+  const users = data?.users || [];
+  const pagination = data?.pagination;
+
+  // Helper function to get display name
+  const getDisplayName = (user: UserData) => {
+    if (user.displayName && user.displayName !== 'undefined undefined') {
+      return user.displayName;
+    }
+    if (user.fullName && user.fullName !== 'undefined undefined') {
+      return user.fullName;
+    }
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.name) {
+      return user.name;
+    }
+    return user.email;
+  };
+
+  // Helper function to get initials
+  const getInitials = (user: UserData) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`;
+    }
+    if (user.name) {
+      const nameParts = user.name.split(' ');
+      if (nameParts.length >= 2) {
+        return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`;
+      }
+      return nameParts[0].charAt(0);
+    }
+    return user.email.charAt(0).toUpperCase();
+  };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const displayName = getDisplayName(user);
+    const matchesSearch = displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
@@ -73,7 +73,33 @@ const Users: React.FC = () => {
     if (selectedUsers.length === filteredUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+      setSelectedUsers(filteredUsers.map(user => user._id));
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await deleteUserMutation.mutateAsync(userId);
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
+    }
+  };
+
+  const handleActivateUser = async (userId: string) => {
+    try {
+      await activateUserMutation.mutateAsync(userId);
+    } catch (error) {
+      console.error('Failed to activate user:', error);
+    }
+  };
+
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      await deactivateUserMutation.mutateAsync(userId);
+    } catch (error) {
+      console.error('Failed to deactivate user:', error);
     }
   };
 
@@ -89,6 +115,40 @@ const Users: React.FC = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const getStatusBadgeColor = (isActive: boolean) => {
+    return isActive 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800';
+  };
+
+  const getUserId = (user: UserData) => {
+    return user.studentId || user.facultyId || user.employeeId || '-';
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedUsers([]); // Clear selection when changing pages
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+    setSelectedUsers([]); // Clear selection
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner size="lg" className="min-h-screen" />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Failed to load users. Please try again later.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -142,7 +202,7 @@ const Users: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">
-              {filteredUsers.length} users found
+              {pagination ? `${pagination.total} users found` : `${filteredUsers.length} users found`}
             </h3>
             {selectedUsers.length > 0 && (
               <div className="flex items-center space-x-2">
@@ -176,6 +236,9 @@ const Users: React.FC = () => {
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Department
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -190,13 +253,13 @@ const Users: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
+              {filteredUsers.map((user: UserData) => (
+                <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => handleSelectUser(user.id)}
+                      checked={selectedUsers.includes(user._id)}
+                      onChange={() => handleSelectUser(user._id)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </td>
@@ -204,11 +267,11 @@ const Users: React.FC = () => {
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                         <span className="text-sm font-medium text-white">
-                          {user.name.charAt(0)}
+                          {getInitials(user)}
                         </span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm font-medium text-gray-900">{getDisplayName(user)}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
@@ -218,14 +281,19 @@ const Users: React.FC = () => {
                       {user.role}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(user.isActive)}`}>
+                      {user.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.department || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.studentId || user.employeeId || '-'}
+                    {getUserId(user)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.createdAt.toLocaleDateString()}
+                    {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
@@ -235,7 +303,30 @@ const Users: React.FC = () => {
                       <button className="text-green-600 hover:text-green-900">
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      {user.isActive ? (
+                        <button 
+                          onClick={() => handleDeactivateUser(user._id)}
+                          disabled={deactivateUserMutation.isPending}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Deactivate User"
+                        >
+                          <UserX className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleActivateUser(user._id)}
+                          disabled={activateUserMutation.isPending}
+                          className="text-green-600 hover:text-green-900"
+                          title="Activate User"
+                        >
+                          <UserCheck className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeleteUser(user._id)}
+                        disabled={deleteUserMutation.isPending}
+                        className="text-red-600 hover:text-red-900"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -245,6 +336,114 @@ const Users: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {pagination && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= pagination.pages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing{' '}
+                  <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                  {' '}to{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * pageSize, pagination.total)}
+                  </span>
+                  {' '}of{' '}
+                  <span className="font-medium">{pagination.total}</span>
+                  {' '}results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= pagination.pages - 2) {
+                      pageNum = pagination.pages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          currentPage === pageNum
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= pagination.pages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Page size selector */}
+        {pagination && (
+          <div className="bg-white px-4 py-3 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span className="text-sm text-gray-700">per page</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

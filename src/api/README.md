@@ -10,13 +10,16 @@ src/api/
 │   └── axios.ts          # Axios configuration with interceptors
 ├── hooks/
 │   ├── useAuth.ts        # Custom hooks for authentication
-│   └── useEvents.ts      # Custom hooks for events
+│   ├── useEvents.ts      # Custom hooks for events
+│   └── useUsers.ts       # Custom hooks for users
 ├── services/
 │   ├── authService.ts    # API service functions
-│   └── eventService.ts   # Events API service functions
+│   ├── eventService.ts   # Events API service functions
+│   └── userService.ts    # Users API service functions
 ├── types/
 │   ├── auth.ts          # TypeScript interfaces for auth
-│   └── events.ts        # TypeScript interfaces for events
+│   ├── events.ts        # TypeScript interfaces for events
+│   └── users.ts         # TypeScript interfaces for users
 ├── index.ts             # Barrel exports
 └── README.md           # This file
 ```
@@ -77,14 +80,43 @@ const handleJoinEvent = async (eventId) => {
 };
 ```
 
+### Users Hooks
+
+```typescript
+import { useUsers, useCreateUser, useDeleteUser, useActivateUser } from '../api/hooks/useUsers';
+
+// Get all users
+const { data: users, isLoading, error } = useUsers();
+
+// Create new user
+const createUserMutation = useCreateUser();
+const handleCreateUser = async (userData) => {
+  const result = await createUserMutation.mutateAsync(userData);
+  if (result.success) {
+    // User created successfully
+  }
+};
+
+// Delete user
+const deleteUserMutation = useDeleteUser();
+const handleDeleteUser = async (userId) => {
+  await deleteUserMutation.mutateAsync(userId);
+};
+
+// Activate/Deactivate user
+const activateUserMutation = useActivateUser();
+const deactivateUserMutation = useDeactivateUser();
+```
+
 ### API Services
 
 ```typescript
-import { authService, eventService } from '../api/services';
+import { authService, eventService, userService } from '../api/services';
 
 // Direct service calls
 const result = await authService.login({ email, password });
 const events = await eventService.getEvents();
+const users = await userService.getUsers();
 ```
 
 ## Configuration
@@ -164,4 +196,14 @@ The API layer includes automatic error handling:
 - `PUT /events/:id` - Update event
 - `DELETE /events/:id` - Delete event
 - `POST /events/:id/join` - Join event
-- `POST /events/:id/leave` - Leave event 
+- `POST /events/:id/leave` - Leave event
+
+### Users
+- `GET /users` - Get all users
+- `GET /users/:id` - Get specific user
+- `POST /users` - Create new user
+- `PUT /users/:id` - Update user
+- `DELETE /users/:id` - Delete user
+- `PATCH /users/:id/activate` - Activate user
+- `PATCH /users/:id/deactivate` - Deactivate user
+- `POST /users/:id/reset-password` - Reset user password 
