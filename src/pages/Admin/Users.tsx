@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Filter, UserCheck, UserX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useUsers, useDeleteUser, useActivateUser, useDeactivateUser } from '../../api/hooks/useUsers';
 import { UserData } from '../../api/types/users';
 import LoadingSpinner from '../../components/Layout/LoadingSpinner';
 import AddUserModal from '../../components/Admin/AddUserModal';
+import EditUserModal from '../../components/Admin/EditUserModal';
+import DeleteConfirmationModal from '../../components/Admin/DeleteConfirmationModal';
 
 const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +15,10 @@ const Users: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserData | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState<UserData | null>(null);
 
   // TanStack Query hooks
   const { data, isLoading, error } = useUsers(currentPage, pageSize);
@@ -80,11 +87,35 @@ const Users: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    try {
+      await deleteUserMutation.mutateAsync(userId);
+      setSelectedUserForDelete(null);
+      toast.success('User deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      toast.error('Failed to delete user. Please try again.');
+    }
+  };
+
+  const handleDeleteClick = (user: UserData) => {
+    setSelectedUserForDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedUsers.length === 0) return;
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} selected user(s)?`)) {
       try {
-        await deleteUserMutation.mutateAsync(userId);
+        // Delete users one by one
+        for (const userId of selectedUsers) {
+          await deleteUserMutation.mutateAsync(userId);
+        }
+        setSelectedUsers([]); // Clear selection after deletion
+        toast.success(`${selectedUsers.length} user(s) deleted successfully`);
       } catch (error) {
-        console.error('Failed to delete user:', error);
+        console.error('Failed to delete selected users:', error);
+        toast.error('Failed to delete some users. Please try again.');
       }
     }
   };
@@ -92,17 +123,26 @@ const Users: React.FC = () => {
   const handleActivateUser = async (userId: string) => {
     try {
       await activateUserMutation.mutateAsync(userId);
+      toast.success('User activated successfully');
     } catch (error) {
       console.error('Failed to activate user:', error);
+      toast.error('Failed to activate user. Please try again.');
     }
   };
 
   const handleDeactivateUser = async (userId: string) => {
     try {
       await deactivateUserMutation.mutateAsync(userId);
+      toast.success('User deactivated successfully');
     } catch (error) {
       console.error('Failed to deactivate user:', error);
+      toast.error('Failed to deactivate user. Please try again.');
     }
+  };
+
+  const handleEditUser = (user: UserData) => {
+    setSelectedUserForEdit(user);
+    setIsEditUserModalOpen(true);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -214,7 +254,7 @@ const Users: React.FC = () => {
                 <span className="text-sm text-gray-500">
                   {selectedUsers.length} selected
                 </span>
-                <button className="text-red-600 hover:text-red-800 text-sm font-medium">
+                <button className="text-red-600 hover:text-red-800 text-sm font-medium" onClick={handleDeleteSelected}>
                   Delete Selected
                 </button>
               </div>
@@ -305,7 +345,11 @@ const Users: React.FC = () => {
                       <button className="text-blue-600 hover:text-blue-900">
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900">
+                      <button 
+                        onClick={() => handleEditUser(user)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Edit User"
+                      >
                         <Edit className="h-4 w-4" />
                       </button>
                       {user.isActive ? (
@@ -328,7 +372,7 @@ const Users: React.FC = () => {
                         </button>
                       )}
                       <button 
-                        onClick={() => handleDeleteUser(user._id)}
+                        onClick={() => handleDeleteClick(user)}
                         disabled={deleteUserMutation.isPending}
                         className="text-red-600 hover:text-red-900"
                       >
@@ -455,6 +499,32 @@ const Users: React.FC = () => {
       <AddUserModal 
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
+      />
+
+      {/* Edit User Modal */}
+      <EditUserModal 
+        isOpen={isEditUserModalOpen}
+        onClose={() => {
+          setIsEditUserModalOpen(false);
+          setSelectedUserForEdit(null);
+        }}
+        user={selectedUserForEdit}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedUserForDelete(null);
+        }}
+        onConfirm={() => {
+          if (selectedUserForDelete) {
+            handleDeleteUser(selectedUserForDelete._id);
+          }
+        }}
+        user={selectedUserForDelete}
+        isLoading={deleteUserMutation.isPending}
       />
     </div>
   );
