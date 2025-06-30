@@ -25,6 +25,13 @@ const Notices: React.FC = () => {
     return matchesSearch && matchesCategory && matchesPriority;
   });
 
+  // Sort notices so pinned are at the top
+  const sortedNotices = [...filteredNotices].sort((a, b) => {
+    const aPinned = a.settings?.pinToTop ? 1 : 0;
+    const bPinned = b.settings?.pinToTop ? 1 : 0;
+    return bPinned - aPinned;
+  });
+
   const handleSelectNotice = (noticeId: string) => {
     setSelectedNotices(prev => 
       prev.includes(noticeId) 
@@ -166,7 +173,7 @@ const Notices: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {filteredNotices.map((notice) => (
+            {sortedNotices.map((notice) => (
               <div key={notice.id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-start space-x-4">
                   <input
@@ -179,7 +186,7 @@ const Notices: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          {notice.pinned && (
+                          {notice.settings?.pinToTop && (
                             <Pin className="h-4 w-4 text-yellow-500" />
                           )}
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(notice.category)}`}>

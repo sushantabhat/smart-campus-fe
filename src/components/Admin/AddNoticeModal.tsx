@@ -43,8 +43,13 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
       setError('Please fill in all required fields.');
       return;
     }
+    const payload = {
+      ...form,
+      settings: { pinToTop: form.pinned }
+    };
+    delete payload.pinned;
     try {
-      await createNotice.mutateAsync(form);
+      await createNotice.mutateAsync(payload);
       setForm(initialForm);
       onClose();
       if (onSuccess) onSuccess();
@@ -167,7 +172,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
               <input
                 type="text"
                 name="author"
-                value={form.author}
+                value={typeof form.author === 'string' ? form.author : ''}
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                 required
