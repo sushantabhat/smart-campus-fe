@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEvents } from '../../api/hooks/useEvents';
 import { Event } from '../../api/types/events';
 import AddEventModal from '../../components/Admin/AddEventModal';
@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/Layout/LoadingSpinner';
 
 const Events: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,21 +16,25 @@ const Events: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<{ id: string; title: string } | null>(null);
 
+  // Debounce searchTerm
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   const { data: eventsData, isLoading, error } = useEvents({
     page: currentPage,
     limit: 10,
-    search: searchTerm,
+    search: debouncedSearch,
     eventType: eventTypeFilter,
     status: statusFilter
   });
 
   const events = eventsData?.data?.events || [];
   const pagination = eventsData?.data?.pagination;
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-  };
 
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
@@ -120,7 +125,7 @@ const Events: React.FC = () => {
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search Events
@@ -173,16 +178,7 @@ const Events: React.FC = () => {
               <option value="postponed">Postponed</option>
             </select>
           </div>
-
-          <div className="flex items-end">
-            <button
-              type="submit"
-              className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
 
       {/* Events Table */}
