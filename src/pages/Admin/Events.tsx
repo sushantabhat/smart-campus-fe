@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Calendar, MapPin, Users, Eye, X } from 'lucide-react';
 import { useEvents } from '../../api/hooks/useEvents';
 import { Event } from '../../api/types/events';
 import AddEventModal from '../../components/Admin/AddEventModal';
@@ -16,6 +16,7 @@ const Events: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<{ id: string; title: string } | null>(null);
+  const [viewedEvent, setViewedEvent] = useState<Event | null>(null);
 
   // Debounce searchTerm
   useEffect(() => {
@@ -100,6 +101,18 @@ const Events: React.FC = () => {
     });
   };
 
+  const eventTypeColors: Record<string, string> = {
+    academic: 'bg-blue-50 text-blue-700',
+    cultural: 'bg-purple-50 text-purple-700',
+    sports: 'bg-green-50 text-green-700',
+    technical: 'bg-orange-50 text-orange-700',
+    social: 'bg-pink-50 text-pink-700',
+    workshop: 'bg-indigo-50 text-indigo-700',
+    seminar: 'bg-teal-50 text-teal-700',
+    conference: 'bg-red-50 text-red-700',
+    other: 'bg-gray-50 text-gray-700',
+  };
+
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
@@ -173,173 +186,208 @@ const Events: React.FC = () => {
       </div>
 
       {/* Events Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendees</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {events.map((event) => (
-                <tr key={event._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {event.title}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {event.shortDescription || event.description.substring(0, 50)}...
-                      </div>
-                      {event.featured && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEventTypeBadgeColor(event.eventType)}`}>
-                      {event.eventType}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {formatDate(event.startDate)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {event.location.venue}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {event.location.room && `${event.location.room}, `}
-                      {event.location.building}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {event.currentAttendees}
-                      {event.maxAttendees && ` / ${event.maxAttendees}`}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {event.isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(event.status)}`}>
-                      {event.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(event)}
-                        className="p-2 rounded hover:bg-blue-100 text-blue-600 transition"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(event)}
-                        className="p-2 rounded hover:bg-red-100 text-red-600 transition"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {events.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-400 text-sm">
-                    No events found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {pagination && pagination.pages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {events.map((event) => (
+          <div
+            key={event._id}
+            className="bg-white rounded-2xl shadow p-7 flex flex-col border border-gray-100 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${eventTypeColors[event.eventType] || 'bg-gray-50 text-gray-700'} border border-gray-200`}>{event.eventType}</span>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{' '}
-                  <span className="font-medium">{(currentPage - 1) * pagination.limit + 1}</span>
-                  {' '}to{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * pagination.limit, pagination.total)}
-                  </span>
-                  {' '}of{' '}
-                  <span className="font-medium">{pagination.total}</span>
-                  {' '}results
-                </p>
+            <h3 className="text-xl font-bold text-gray-900 mb-1 line-clamp-2">{event.title}</h3>
+            <p className="text-gray-500 mb-4 line-clamp-3 text-sm">{event.shortDescription || event.description}</p>
+            <div className="space-y-2 mb-5">
+              <div className="flex items-center text-sm text-gray-600">
+                <Calendar className="h-4 w-4 mr-2" />
+                {formatDate(event.startDate)} {formatTime(event.startTime)} - {formatDate(event.endDate)} {formatTime(event.endTime)}
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        page === currentPage
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === pagination.pages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </nav>
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPin className="h-4 w-4 mr-2" />
+                {[event.location.venue, event.location.room, event.location.building, event.location.campus].filter(Boolean).join(', ')}
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <Users className="h-4 w-4 mr-2" />
+                {event.currentAttendees} / {event.maxAttendees || '∞'} attendees
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(event.status)} border border-gray-200`}>{event.status}</span>
+              </div>
+            </div>
+            <hr className="my-3" />
+            <div className="flex items-center justify-between mt-auto">
+              <span className="text-xs text-gray-400">Created by {event.organizer?.fullName || event.organizer?.email || 'Unknown'}</span>
+              <div className="flex items-center space-x-4">
+                <button
+                  className="text-blue-600 hover:text-blue-900"
+                  title="View Event"
+                  onClick={() => setViewedEvent(event)}
+                >
+                  <Eye className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleEdit(event)}
+                  className="text-green-600 hover:text-green-900"
+                  title="Edit Event"
+                >
+                  <Edit className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(event)}
+                  className="text-red-600 hover:text-red-900"
+                  title="Delete Event"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.pages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === pagination.pages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing{' '}
+                <span className="font-medium">{(currentPage - 1) * pagination.limit + 1}</span>
+                {' '}to{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * pagination.limit, pagination.total)}
+                </span>
+                {' '}of{' '}
+                <span className="font-medium">{pagination.total}</span>
+                {' '}results
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      page === currentPage
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === pagination.pages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Event Modal */}
+      {viewedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative overflow-y-auto max-h-[90vh]">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => setViewedEvent(null)}
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <h2 className="text-2xl font-bold mb-2">{viewedEvent.title}</h2>
+            <p className="text-gray-600 mb-4">{viewedEvent.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <div className="mb-2"><span className="font-semibold">Type:</span> {viewedEvent.eventType}</div>
+                <div className="mb-2"><span className="font-semibold">Category:</span> {viewedEvent.category}</div>
+                <div className="mb-2"><span className="font-semibold">Status:</span> <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(viewedEvent.status)} border border-gray-200`}>{viewedEvent.status}</span></div>
+                <div className="mb-2 flex items-center"><Calendar className="h-4 w-4 mr-2" /> <span><span className="font-semibold">Start:</span> {formatDate(viewedEvent.startDate)} {formatTime(viewedEvent.startTime)}</span></div>
+                <div className="mb-2 flex items-center"><Calendar className="h-4 w-4 mr-2" /> <span><span className="font-semibold">End:</span> {formatDate(viewedEvent.endDate)} {formatTime(viewedEvent.endTime)}</span></div>
+                <div className="mb-2 flex items-center"><MapPin className="h-4 w-4 mr-2" /> <span>{[viewedEvent.location.venue, viewedEvent.location.room, viewedEvent.location.building, viewedEvent.location.campus].filter(Boolean).join(', ')}</span></div>
+              </div>
+              <div>
+                <div className="mb-2"><span className="font-semibold">Organizer:</span> {viewedEvent.organizer?.fullName || viewedEvent.organizer?.email || 'Unknown'}</div>
+                {viewedEvent.coOrganizers && viewedEvent.coOrganizers.length > 0 && (
+                  <div className="mb-2">
+                    <span className="font-semibold">Co-Organizers:</span>
+                    <ul className="list-disc list-inside ml-2">
+                      {viewedEvent.coOrganizers.map((co, idx) => (
+                        <li key={co._id || idx}>{co.fullName || co.email}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="mb-2 flex items-center"><Users className="h-4 w-4 mr-2" /> <span>{viewedEvent.currentAttendees} / {viewedEvent.maxAttendees || '∞'} attendees</span></div>
+                <div className="mb-2"><span className="font-semibold">Registration:</span> {viewedEvent.isRegistrationRequired ? (viewedEvent.isRegistrationOpen ? 'Open' : 'Closed') : 'Not required'}</div>
+                {viewedEvent.registrationDeadline && (
+                  <div className="mb-2"><span className="font-semibold">Registration Deadline:</span> {formatDate(viewedEvent.registrationDeadline)}</div>
+                )}
+              </div>
+            </div>
+            {viewedEvent.tags && viewedEvent.tags.length > 0 && (
+              <div className="mb-4">
+                <span className="font-semibold">Tags:</span>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {viewedEvent.tags.map((tag, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {viewedEvent.attachments && viewedEvent.attachments.length > 0 && (
+              <div className="mb-4">
+                <span className="font-semibold">Attachments:</span>
+                <ul className="list-disc list-inside ml-2">
+                  {viewedEvent.attachments.map((att, idx) => (
+                    <li key={att.url || idx}><a href={att.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{att.name || att.url}</a></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {viewedEvent.contactInfo && (
+              <div className="mb-4">
+                <span className="font-semibold">Contact Info:</span>
+                <div className="ml-2">
+                  {viewedEvent.contactInfo.email && <div>Email: {viewedEvent.contactInfo.email}</div>}
+                  {viewedEvent.contactInfo.phone && <div>Phone: {viewedEvent.contactInfo.phone}</div>}
+                  {viewedEvent.contactInfo.website && <div>Website: <a href={viewedEvent.contactInfo.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{viewedEvent.contactInfo.website}</a></div>}
+                </div>
+              </div>
+            )}
+            <div className="text-xs text-gray-400 mt-4">Created at: {formatDate(viewedEvent.createdAt)} | Updated at: {formatDate(viewedEvent.updatedAt)}</div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <AddEventModal
