@@ -3,6 +3,8 @@ import { Plus, Search, Edit, Trash2, Eye, Filter, Pin } from 'lucide-react';
 import { useNotices, useDeleteNotice } from '../../api/hooks/useNotices';
 import { Notice } from '../../api/types/notices';
 import AddNoticeModal from '../../components/Admin/AddNoticeModal';
+import ViewNoticeModal from '../../components/Admin/ViewNoticeModal';
+import EditNoticeModal from '../../components/Admin/EditNoticeModal';
 
 const Notices: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +12,9 @@ const Notices: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedNotices, setSelectedNotices] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch notices from backend
   const { data, isLoading, error, refetch } = useNotices();
@@ -85,6 +90,19 @@ const Notices: React.FC = () => {
           setIsAddModalOpen(false);
           refetch();
         }}
+      />
+
+      {/* Modals for view and edit */}
+      <ViewNoticeModal
+        isOpen={isViewModalOpen}
+        notice={selectedNotice}
+        onClose={() => setIsViewModalOpen(false)}
+      />
+      <EditNoticeModal
+        isOpen={isEditModalOpen}
+        notice={selectedNotice}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={refetch}
       />
 
       {/* Page header - matches screenshot */}
@@ -199,17 +217,17 @@ const Notices: React.FC = () => {
                             {notice.priority}
                           </span>
                         </div>
-                        <h2 className="text-lg font-bold text-gray-900 mb-1">{notice.title}</h2>
-                        <p className="text-gray-700 mb-2 line-clamp-2">{notice.content}</p>
+                        <h2 className="text-lg font-bold text-gray-900 mb-1 break-all">{notice.title}</h2>
+                        <p className="text-gray-700 mb-2 line-clamp-2 break-all">{notice.content}</p>
                         <div className="text-sm text-gray-500">
                           By {typeof notice.author === 'object' && notice.author !== null ? (notice.author.name || notice.author.email || 'Unknown') : (notice.author || 'Unknown')} &nbsp; Published: {new Date(notice.publishDate).toLocaleDateString()} &nbsp; Expires: {new Date(notice.expiryDate).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="flex flex-col items-end space-y-2 ml-4">
-                        <button className="text-blue-600 hover:text-blue-900" title="View">
+                        <button className="text-blue-600 hover:text-blue-900" title="View" onClick={() => { setSelectedNotice(notice); setIsViewModalOpen(true); }}>
                           <Eye className="h-5 w-5" />
                         </button>
-                        <button className="text-green-600 hover:text-green-900" title="Edit">
+                        <button className="text-green-600 hover:text-green-900" title="Edit" onClick={() => { setSelectedNotice(notice); setIsEditModalOpen(true); }}>
                           <Edit className="h-5 w-5" />
                         </button>
                         <button className="text-red-600 hover:text-red-900" title="Delete" onClick={() => handleDelete(notice.id)}>
