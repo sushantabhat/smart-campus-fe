@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '../services/eventService';
-import { Event, CreateEventRequest } from '../types/events';
+import { CreateEventRequest } from '../types/events';
 import { toast } from 'react-hot-toast';
 
 export const useEvents = (params?: {
