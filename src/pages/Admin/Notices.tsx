@@ -1,60 +1,21 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Filter, Pin } from 'lucide-react';
-import { Notice } from '../../types';
+import { useNotices, useDeleteNotice } from '../../api/hooks/useNotices';
+import { Notice } from '../../api/types/notices';
+import AddNoticeModal from '../../components/Admin/AddNoticeModal';
 
 const Notices: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedNotices, setSelectedNotices] = useState<string[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Mock notices data
-  const notices: Notice[] = [
-    {
-      id: '1',
-      title: 'Exam Schedule for Spring 2024',
-      content: 'The examination schedule for the Spring 2024 semester has been published. Please check your student portal for details.',
-      category: 'exam',
-      priority: 'high',
-      publishDate: new Date('2024-03-01'),
-      expiryDate: new Date('2024-04-30'),
-      author: 'Academic Office',
-      pinned: true,
-    },
-    {
-      id: '2',
-      title: 'Campus Maintenance Notice',
-      content: 'Scheduled maintenance will be carried out in the library building from March 15-17. Services may be temporarily unavailable.',
-      category: 'alert',
-      priority: 'medium',
-      publishDate: new Date('2024-03-10'),
-      expiryDate: new Date('2024-03-18'),
-      author: 'Facilities Management',
-      pinned: false,
-    },
-    {
-      id: '3',
-      title: 'Student Council Elections',
-      content: 'Nominations are now open for Student Council elections. Submit your nominations by March 25th.',
-      category: 'general',
-      priority: 'medium',
-      publishDate: new Date('2024-03-12'),
-      expiryDate: new Date('2024-03-26'),
-      author: 'Student Affairs',
-      pinned: true,
-    },
-    {
-      id: '4',
-      title: 'Research Grant Opportunities',
-      content: 'New research grant opportunities are available for faculty members. Application deadline is April 15th.',
-      category: 'academic',
-      priority: 'low',
-      publishDate: new Date('2024-03-14'),
-      expiryDate: new Date('2024-04-16'),
-      author: 'Research Office',
-      pinned: false,
-    },
-  ];
+  // Fetch notices from backend
+  const { data, isLoading, error, refetch } = useNotices();
+  const deleteNotice = useDeleteNotice();
+
+  const notices: Notice[] = data?.data?.notices || [];
 
   const filteredNotices = notices.filter(notice => {
     const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,6 +31,10 @@ const Notices: React.FC = () => {
         ? prev.filter(id => id !== noticeId)
         : [...prev, noticeId]
     );
+  };
+
+  const handleDelete = (noticeId: string) => {
+    deleteNotice.mutate(noticeId);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -102,19 +67,32 @@ const Notices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
+      {/* Add Notice Modal */}
+      <AddNoticeModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          setIsAddModalOpen(false);
+          refetch();
+        }}
+      />
+
+      {/* Page header - matches screenshot */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notices</h1>
           <p className="text-gray-600">Manage campus notices and announcements</p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Post Notice
         </button>
       </div>
 
-      {/* Filters and search */}
+      {/* Filters and search - matches screenshot */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -178,61 +156,63 @@ const Notices: React.FC = () => {
           </div>
         </div>
 
-        <div className="divide-y divide-gray-200">
-          {filteredNotices.map((notice) => (
-            <div key={notice.id} className="p-6 hover:bg-gray-50">
-              <div className="flex items-start space-x-4">
-                <input
-                  type="checkbox"
-                  checked={selectedNotices.includes(notice.id)}
-                  onChange={() => handleSelectNotice(notice.id)}
-                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        {notice.pinned && (
-                          <Pin className="h-4 w-4 text-yellow-500" />
-                        )}
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(notice.category)}`}>
-                          {notice.category}
-                        </span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(notice.priority)}`}>
-                          {notice.priority}
-                        </span>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600">Failed to load notices. Please try again later.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredNotices.map((notice) => (
+              <div key={notice.id} className="p-6 hover:bg-gray-50">
+                <div className="flex items-start space-x-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedNotices.includes(notice.id)}
+                    onChange={() => handleSelectNotice(notice.id)}
+                    className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {notice.pinned && (
+                            <Pin className="h-4 w-4 text-yellow-500" />
+                          )}
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(notice.category)}`}>
+                            {notice.category}
+                          </span>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(notice.priority)}`}>
+                            {notice.priority}
+                          </span>
+                        </div>
+                        <h2 className="text-lg font-bold text-gray-900 mb-1">{notice.title}</h2>
+                        <p className="text-gray-700 mb-2 line-clamp-2">{notice.content}</p>
+                        <div className="text-sm text-gray-500">
+                          By {typeof notice.author === 'object' && notice.author !== null ? (notice.author.name || notice.author.email || 'Unknown') : (notice.author || 'Unknown')} &nbsp; Published: {new Date(notice.publishDate).toLocaleDateString()} &nbsp; Expires: {new Date(notice.expiryDate).toLocaleDateString()}
+                        </div>
                       </div>
-                      
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{notice.title}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{notice.content}</p>
-                      
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>By {notice.author}</span>
-                        <span>Published: {notice.publishDate.toLocaleDateString()}</span>
-                        {notice.expiryDate && (
-                          <span>Expires: {notice.expiryDate.toLocaleDateString()}</span>
-                        )}
+                      <div className="flex flex-col items-end space-y-2 ml-4">
+                        <button className="text-blue-600 hover:text-blue-900" title="View">
+                          <Eye className="h-5 w-5" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-900" title="Edit">
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button className="text-red-600 hover:text-red-900" title="Delete" onClick={() => handleDelete(notice.id)}>
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-900">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
