@@ -1,15 +1,78 @@
 export interface Event {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
-  location: string;
-  organizer: string;
-  category: 'academic' | 'social' | 'sports' | 'cultural';
-  isPublic: boolean;
+  shortDescription?: string;
+  eventType: 'academic' | 'cultural' | 'sports' | 'technical' | 'social' | 'workshop' | 'seminar' | 'conference' | 'other';
+  category: 'student' | 'faculty' | 'admin' | 'public' | 'invitation-only';
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  location: {
+    venue: string;
+    room?: string;
+    building?: string;
+    campus?: string;
+  };
+  organizer: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    fullName: string;
+  };
+  coOrganizers?: Array<{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    fullName: string;
+  }>;
+  attendees: Array<{
+    user: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      fullName: string;
+    };
+    status: 'registered' | 'attended' | 'cancelled' | 'waitlist';
+    registeredAt: string;
+  }>;
   maxAttendees?: number;
   currentAttendees: number;
+  registrationDeadline?: string;
+  isRegistrationRequired: boolean;
+  isRegistrationOpen: boolean;
+  tags?: string[];
+  images?: Array<{
+    url: string;
+    caption?: string;
+    isPrimary: boolean;
+  }>;
+  attachments?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    size?: number;
+  }>;
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    website?: string;
+  };
+  status: 'draft' | 'published' | 'cancelled' | 'completed' | 'postponed';
+  visibility: 'public' | 'private' | 'restricted';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  featured: boolean;
+  highlights?: string[];
+  requirements?: string[];
+  benefits?: string[];
+  externalLinks?: Array<{
+    title: string;
+    url: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,26 +80,72 @@ export interface Event {
 export interface CreateEventRequest {
   title: string;
   description: string;
-  date: string;
-  time: string;
-  location: string;
+  shortDescription?: string;
+  eventType: Event['eventType'];
   category: Event['category'];
-  isPublic: boolean;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  location: {
+    venue: string;
+    room?: string;
+    building?: string;
+    campus?: string;
+  };
+  coOrganizers?: string[];
   maxAttendees?: number;
+  registrationDeadline?: string;
+  isRegistrationRequired?: boolean;
+  isRegistrationOpen?: boolean;
+  tags?: string[];
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    website?: string;
+  };
+  status?: Event['status'];
+  visibility?: Event['visibility'];
+  priority?: Event['priority'];
+  featured?: boolean;
+  highlights?: string[];
+  requirements?: string[];
+  benefits?: string[];
+  externalLinks?: Array<{
+    title: string;
+    url: string;
+  }>;
 }
 
 export interface UpdateEventRequest extends Partial<CreateEventRequest> {
-  id: string;
+  _id: string;
 }
 
 export interface EventsResponse {
   success: boolean;
-  data: Event[];
-  message?: string;
+  message: string;
+  data: {
+    events: Event[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+  timestamp: string;
 }
 
 export interface EventResponse {
   success: boolean;
+  message: string;
   data: Event;
-  message?: string;
+  timestamp: string;
+}
+
+export interface CreateEventResponse {
+  success: boolean;
+  message: string;
+  data: Event;
+  timestamp: string;
 } 

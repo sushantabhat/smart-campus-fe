@@ -1,21 +1,32 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '../services/eventService';
-import { CreateEventRequest, UpdateEventRequest } from '../types/events';
+import { Event, CreateEventRequest } from '../types/events';
+import { toast } from 'react-hot-toast';
 
-export const useEvents = () => {
+export const useEvents = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  eventType?: string;
+  category?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  featured?: boolean;
+}) => {
   return useQuery({
-    queryKey: ['events'],
-    queryFn: () => eventService.getEvents(),
-    select: (data) => data.data,
+    queryKey: ['events', params],
+    queryFn: () => eventService.getEvents(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 export const useEvent = (id: string) => {
   return useQuery({
-    queryKey: ['events', id],
-    queryFn: () => eventService.getEvent(id),
-    select: (data) => data.data,
+    queryKey: ['event', id],
+    queryFn: () => eventService.getEventById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -24,9 +35,12 @@ export const useCreateEvent = () => {
 
   return useMutation({
     mutationFn: (eventData: CreateEventRequest) => eventService.createEvent(eventData),
-    onSuccess: () => {
-      // Invalidate and refetch events list
+    onSuccess: (data) => {
+      toast.success('Event created successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create event');
     },
   });
 };
@@ -35,12 +49,15 @@ export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (eventData: UpdateEventRequest) => eventService.updateEvent(eventData),
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateEventRequest> }) =>
+      eventService.updateEvent(id, { ...data }),
     onSuccess: (data, variables) => {
-      // Update specific event in cache
-      queryClient.setQueryData(['events', variables.id], data);
-      // Invalidate events list
+      toast.success('Event updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', variables.id] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update event');
     },
   });
 };
@@ -50,37 +67,58 @@ export const useDeleteEvent = () => {
 
   return useMutation({
     mutationFn: (id: string) => eventService.deleteEvent(id),
-    onSuccess: (_, deletedId) => {
-      // Remove from cache
-      queryClient.removeQueries({ queryKey: ['events', deletedId] });
-      // Invalidate events list
+    onSuccess: () => {
+      toast.success('Event deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete event');
     },
   });
 };
 
-export const useJoinEvent = () => {
+export const useRegisterForEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (eventId: string) => eventService.joinEvent(eventId),
-    onSuccess: (_, eventId) => {
-      // Invalidate specific event and events list
-      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+    mutationFn: (eventId: string) => eventService.registerForEvent(eventId),
+    onSuccess: () => {
+      toast.success('Successfully registered for event!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to register for event');
     },
   });
 };
 
-export const useLeaveEvent = () => {
+export const useUnregisterFromEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (eventId: string) => eventService.leaveEvent(eventId),
-    onSuccess: (_, eventId) => {
-      // Invalidate specific event and events list
-      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+    mutationFn: (eventId: string) => eventService.unregisterFromEvent(eventId),
+    onSuccess: () => {
+      toast.success('Successfully unregistered from event!');
       queryClient.invalidateQueries({ queryKey: ['events'] });
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to unregister from event');
+    },
+  });
+};
+
+export const useUserEvents = () => {
+  return useQuery({
+    queryKey: ['user-events'],
+    queryFn: () => eventService.getUserEvents(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useOrganizedEvents = () => {
+  return useQuery({
+    queryKey: ['organized-events'],
+    queryFn: () => eventService.getOrganizedEvents(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }; 

@@ -1,45 +1,75 @@
 import { apiClient } from '../config/axios';
-import { 
-  CreateEventRequest, 
-  UpdateEventRequest, 
-  EventsResponse, 
-  EventResponse 
+import {
+  Event,
+  CreateEventRequest,
+  UpdateEventRequest,
+  EventsResponse,
+  EventResponse,
+  CreateEventResponse
 } from '../types/events';
 
 export const eventService = {
-  async getEvents(): Promise<EventsResponse> {
-    const response = await apiClient.get<EventsResponse>('/events');
+  // Get all events with pagination and filters
+  async getEvents(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    eventType?: string;
+    category?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    featured?: boolean;
+  }): Promise<EventsResponse> {
+    const response = await apiClient.get('/events', { params });
     return response.data;
   },
 
-  async getEvent(id: string): Promise<EventResponse> {
-    const response = await apiClient.get<EventResponse>(`/events/${id}`);
+  // Get event by ID
+  async getEventById(id: string): Promise<EventResponse> {
+    const response = await apiClient.get(`/events/${id}`);
     return response.data;
   },
 
-  async createEvent(eventData: CreateEventRequest): Promise<EventResponse> {
-    const response = await apiClient.post<EventResponse>('/events', eventData);
+  // Create new event
+  async createEvent(eventData: CreateEventRequest): Promise<CreateEventResponse> {
+    const response = await apiClient.post('/events', eventData);
     return response.data;
   },
 
-  async updateEvent(eventData: UpdateEventRequest): Promise<EventResponse> {
-    const { id, ...data } = eventData;
-    const response = await apiClient.put<EventResponse>(`/events/${id}`, data);
+  // Update event
+  async updateEvent(id: string, eventData: Partial<CreateEventRequest>): Promise<EventResponse> {
+    const response = await apiClient.put(`/events/${id}`, eventData);
     return response.data;
   },
 
+  // Delete event
   async deleteEvent(id: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.delete<{ success: boolean; message: string }>(`/events/${id}`);
+    const response = await apiClient.delete(`/events/${id}`);
     return response.data;
   },
 
-  async joinEvent(eventId: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ success: boolean; message: string }>(`/events/${eventId}/join`);
+  // Register for event
+  async registerForEvent(eventId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post(`/events/${eventId}/register`);
     return response.data;
   },
 
-  async leaveEvent(eventId: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ success: boolean; message: string }>(`/events/${eventId}/leave`);
+  // Unregister from event
+  async unregisterFromEvent(eventId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete(`/events/${eventId}/register`);
     return response.data;
   },
+
+  // Get user's registered events
+  async getUserEvents(): Promise<EventsResponse> {
+    const response = await apiClient.get('/events/user/registered');
+    return response.data;
+  },
+
+  // Get user's organized events
+  async getOrganizedEvents(): Promise<EventsResponse> {
+    const response = await apiClient.get('/events/user/organized');
+    return response.data;
+  }
 }; 
