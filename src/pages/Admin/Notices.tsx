@@ -15,7 +15,10 @@ const Notices: React.FC = () => {
   const { data, isLoading, error, refetch } = useNotices();
   const deleteNotice = useDeleteNotice();
 
-  const notices: Notice[] = data?.data?.notices || [];
+  const notices: Notice[] = (data?.data?.notices || []).map((n) => ({
+    ...n,
+    id: n.id || n._id
+  }));
 
   const filteredNotices = notices.filter(notice => {
     const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
