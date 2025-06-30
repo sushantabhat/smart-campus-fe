@@ -28,12 +28,12 @@ const DeleteEventModal: React.FC<DeleteEventModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex items-center mb-4">
-          <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-md animate-fadeIn">
+        <div className="flex flex-col items-center p-6">
+          <div className="flex items-center justify-center h-14 w-14 rounded-full bg-red-100 mb-4">
             <svg
-              className="h-6 w-6 text-red-600"
+              className="h-8 w-8 text-red-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -46,21 +46,23 @@ const DeleteEventModal: React.FC<DeleteEventModalProps> = ({
               />
             </svg>
           </div>
-        </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Delete Event</h2>
+          <p className="text-sm text-gray-500 mb-4">This action cannot be undone.</p>
 
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Delete Event
-          </h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Are you sure you want to delete the event "{eventTitle}"? This action cannot be undone.
+          <div className="w-full bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6 flex flex-col items-center">
+            <span className="text-base font-medium text-gray-800 mb-1">{eventTitle}</span>
+            {/* Add more event details here if needed */}
+          </div>
+
+          <p className="text-sm text-gray-600 text-center mb-6">
+            Are you sure you want to delete this event? This will permanently remove the event and all associated data.
           </p>
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex w-full gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
             >
               Cancel
             </button>
@@ -68,9 +70,9 @@ const DeleteEventModal: React.FC<DeleteEventModalProps> = ({
               type="button"
               onClick={handleDelete}
               disabled={deleteEventMutation.isPending}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {deleteEventMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteEventMutation.isPending ? 'Deleting...' : 'Delete Event'}
             </button>
           </div>
         </div>
