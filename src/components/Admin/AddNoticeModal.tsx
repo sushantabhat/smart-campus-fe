@@ -20,27 +20,103 @@ const initialForm: Partial<Notice> = {
   pinned: false,
 };
 
+const initialValidationErrors = {
+  title: '',
+  content: '',
+  type: '',
+  category: '',
+  priority: '',
+  publishDate: '',
+  author: '',
+  expiryDate: '',
+};
+
 const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [form, setForm] = useState<Partial<Notice>>(initialForm);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>(initialValidationErrors);
   const createNotice = useCreateNotice();
+
+  const validateField = (name: string, value: any) => {
+    let message = '';
+    switch (name) {
+      case 'title':
+        if (!value) message = 'Title is required.';
+        else if (value.length > 200) message = 'Title cannot exceed 200 characters.';
+        break;
+      case 'content':
+        if (!value) message = 'Content is required.';
+        else if (value.length < 10) message = 'Content must be at least 10 characters.';
+        break;
+      case 'type':
+        if (!value) message = 'Type is required.';
+        break;
+      case 'category':
+        if (!value) message = 'Category is required.';
+        break;
+      case 'priority':
+        if (!value) message = 'Priority is required.';
+        break;
+      case 'publishDate':
+        if (!value) message = 'Publish date is required.';
+        break;
+      case 'author':
+        if (!value) message = 'Author is required.';
+        break;
+      case 'expiryDate':
+        if (!value) {
+          message = 'Expiry date is required.';
+        } else {
+          const publish = form.publishDate ? new Date(form.publishDate as string) : null;
+          const expiry = new Date(value);
+          if (publish && expiry <= publish) {
+            message = 'Expiry date must be after publish date.';
+          }
+        }
+        break;
+      default:
+        break;
+    }
+    setValidationErrors((prev) => ({ ...prev, [name]: message }));
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
+    let newValue: any = value;
     if (type === 'checkbox' && e.target instanceof HTMLInputElement) {
-      setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+      newValue = (e.target as HTMLInputElement).checked;
     }
+    setForm((prev) => ({ ...prev, [name]: newValue }));
+    validateField(name, newValue);
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    Object.entries(form).forEach(([key, value]) => {
+      validateField(key, value);
+      if (
+        (key === 'title' && (!value || value.length > 200)) ||
+        (key === 'content' && (!value || value.length < 10)) ||
+        (key === 'type' && !value) ||
+        (key === 'category' && !value) ||
+        (key === 'priority' && !value) ||
+        (key === 'publishDate' && !value) ||
+        (key === 'author' && !value) ||
+        (key === 'expiryDate' && validationErrors.expiryDate)
+      ) {
+        valid = false;
+      }
+    });
+    return valid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.title || !form.content || !form.type || !form.category || !form.priority || !form.publishDate || !form.author) {
-      setError('Please fill in all required fields.');
+    if (!validateForm()) {
+      setError('Please fix the errors above.');
       return;
     }
     const payload = {
@@ -51,6 +127,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
     try {
       await createNotice.mutateAsync(payload);
       setForm(initialForm);
+      setValidationErrors(initialValidationErrors);
       onClose();
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -76,22 +153,24 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
             <input
               type="text"
               name="title"
-              value={form.title}
+              value={typeof form.title === 'string' ? form.title : ''}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
               required
             />
+            {validationErrors.title && <div className="text-red-600 text-xs mt-1">{validationErrors.title}</div>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Content *</label>
             <textarea
               name="content"
-              value={form.content}
+              value={typeof form.content === 'string' ? form.content : ''}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
               rows={4}
               required
             />
+            {validationErrors.content && <div className="text-red-600 text-xs mt-1">{validationErrors.content}</div>}
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
@@ -111,6 +190,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 <option value="maintenance">Maintenance</option>
                 <option value="other">Other</option>
               </select>
+              {validationErrors.type && <div className="text-red-600 text-xs mt-1">{validationErrors.type}</div>}
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Category *</label>
@@ -127,6 +207,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 <option value="staff">Staff</option>
                 <option value="all">All</option>
               </select>
+              {validationErrors.category && <div className="text-red-600 text-xs mt-1">{validationErrors.category}</div>}
             </div>
           </div>
           <div className="flex gap-2">
@@ -143,6 +224,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
+              {validationErrors.priority && <div className="text-red-600 text-xs mt-1">{validationErrors.priority}</div>}
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Publish Date *</label>
@@ -154,6 +236,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                 required
               />
+              {validationErrors.publishDate && <div className="text-red-600 text-xs mt-1">{validationErrors.publishDate}</div>}
             </div>
           </div>
           <div className="flex gap-2">
@@ -165,7 +248,9 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 value={form.expiryDate?.toString().slice(0, 10) || ''}
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                required
               />
+              {validationErrors.expiryDate && <div className="text-red-600 text-xs mt-1">{validationErrors.expiryDate}</div>}
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Author *</label>
@@ -177,6 +262,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                 required
               />
+              {validationErrors.author && <div className="text-red-600 text-xs mt-1">{validationErrors.author}</div>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -194,7 +280,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-              disabled={createNotice.status === 'pending'}
+              disabled={Object.values(validationErrors).some((msg) => msg) || createNotice.status === 'pending'}
             >
               {createNotice.status === 'pending' ? 'Posting...' : 'Post Notice'}
             </button>
