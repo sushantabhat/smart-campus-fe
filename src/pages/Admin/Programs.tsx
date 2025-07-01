@@ -6,6 +6,7 @@ import AddProgramModal from '../../components/Admin/AddProgramModal';
 import EditProgramModal from '../../components/Admin/EditProgramModal';
 import DeleteProgramModal from '../../components/Admin/DeleteProgramModal';
 import LoadingSpinner from '../../components/Layout/LoadingSpinner';
+import { AxiosResponse } from 'axios';
 
 const Programs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,13 +16,22 @@ const Programs: React.FC = () => {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [deletingProgram, setDeletingProgram] = useState<{ id: string; name: string } | null>(null);
 
+  // Correctly type the Axios response
   const { programsQuery, createProgram, updateProgram, deleteProgram } = usePrograms();
 
-  const programs = Array.isArray(programsQuery.data?.data) ? programsQuery.data.data : [];
+  // Type guard for backend response
+  function isBackendProgramsResponse(obj: any): obj is { success: boolean; message: string; data: Program[] } {
+    return obj && Array.isArray(obj.data);
+  }
+  let programs: Program[] = [];
+  if (programsQuery.data && isBackendProgramsResponse((programsQuery.data as any).data)) {
+    programs = (programsQuery.data as any).data.data;
+  }
+  console.log('Programs:', programs);
   const isLoading = programsQuery.isLoading;
   const error = programsQuery.error;
 
-  const filteredPrograms = programs.filter(program => {
+  const filteredPrograms = programs.filter((program: Program) => {
     const matchesSearch = program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          program.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLevel = levelFilter === 'all' || program.level === levelFilter;
@@ -76,7 +86,7 @@ const Programs: React.FC = () => {
     }
   };
 
-  const departments = Array.from(new Set(programs.map(p => p.department)));
+  const departments = Array.from(new Set(programs.map((p: Program) => p.department)));
 
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -139,7 +149,7 @@ const Programs: React.FC = () => {
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Departments</option>
-              {departments.map(dept => (
+              {departments.map((dept: string) => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
@@ -162,7 +172,7 @@ const Programs: React.FC = () => {
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPrograms.map((program) => (
+            {filteredPrograms.map((program: Program) => (
               <div key={program._id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
