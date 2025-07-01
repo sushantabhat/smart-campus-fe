@@ -1,60 +1,25 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Filter, GraduationCap, Clock, BookOpen } from 'lucide-react';
-import { Program } from '../../types';
+import { usePrograms } from '../../api/hooks/usePrograms';
+import { Program } from '../../api/types/programs';
+import AddProgramModal from '../../components/Admin/AddProgramModal';
+import EditProgramModal from '../../components/Admin/EditProgramModal';
+import DeleteProgramModal from '../../components/Admin/DeleteProgramModal';
+import LoadingSpinner from '../../components/Layout/LoadingSpinner';
 
 const Programs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [deletingProgram, setDeletingProgram] = useState<{ id: string; name: string } | null>(null);
 
-  // Mock programs data
-  const programs: Program[] = [
-    {
-      id: '1',
-      name: 'Bachelor of Computer Science',
-      department: 'Computer Science',
-      level: 'undergraduate',
-      duration: '4 years',
-      description: 'A comprehensive program covering software development, algorithms, and computer systems.',
-      prerequisites: ['High School Diploma', 'Mathematics Background'],
-      image: '/images/cs-program.jpg',
-      brochureUrl: '/brochures/cs-bachelor.pdf',
-    },
-    {
-      id: '2',
-      name: 'Master of Business Administration',
-      department: 'Business Administration',
-      level: 'postgraduate',
-      duration: '2 years',
-      description: 'Advanced business management program with focus on leadership and strategic thinking.',
-      prerequisites: ['Bachelor\'s Degree', 'Work Experience'],
-      image: '/images/mba-program.jpg',
-      brochureUrl: '/brochures/mba-master.pdf',
-    },
-    {
-      id: '3',
-      name: 'Professional Certificate in Data Science',
-      department: 'Computer Science',
-      level: 'professional',
-      duration: '6 months',
-      description: 'Intensive program for professionals looking to transition into data science roles.',
-      prerequisites: ['Basic Programming Knowledge', 'Statistics Background'],
-      image: '/images/ds-certificate.jpg',
-      brochureUrl: '/brochures/ds-certificate.pdf',
-    },
-    {
-      id: '4',
-      name: 'Bachelor of Engineering',
-      department: 'Engineering',
-      level: 'undergraduate',
-      duration: '4 years',
-      description: 'Comprehensive engineering program with multiple specializations.',
-      prerequisites: ['High School Diploma', 'Physics and Mathematics'],
-      image: '/images/engineering-program.jpg',
-      brochureUrl: '/brochures/engineering-bachelor.pdf',
-    },
-  ];
+  const { programsQuery, createProgram, updateProgram, deleteProgram } = usePrograms();
+
+  const programs = programsQuery.data?.data || [];
+  const isLoading = programsQuery.isLoading;
+  const error = programsQuery.error;
 
   const filteredPrograms = programs.filter(program => {
     const matchesSearch = program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,12 +29,38 @@ const Programs: React.FC = () => {
     return matchesSearch && matchesLevel && matchesDepartment;
   });
 
-  const handleSelectProgram = (programId: string) => {
-    setSelectedPrograms(prev => 
-      prev.includes(programId) 
-        ? prev.filter(id => id !== programId)
-        : [...prev, programId]
-    );
+  const handleEdit = (program: Program) => {
+    setEditingProgram(program);
+  };
+
+  const handleDelete = (program: Program) => {
+    setDeletingProgram({ id: program._id, name: program.name });
+  };
+
+  const handleAdd = (data: Omit<Program, '_id' | 'createdAt' | 'updatedAt'>) => {
+    createProgram.mutate(data, {
+      onSuccess: () => {
+        setIsAddModalOpen(false);
+      }
+    });
+  };
+
+  const handleEditSubmit = (id: string, data: Partial<Program>) => {
+    updateProgram.mutate({ id, data }, {
+      onSuccess: () => {
+        setEditingProgram(null);
+      }
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingProgram) {
+      deleteProgram.mutate(deletingProgram.id, {
+        onSuccess: () => {
+          setDeletingProgram(null);
+        }
+      });
+    }
   };
 
   const getLevelBadgeColor = (level: string) => {
@@ -87,6 +78,18 @@ const Programs: React.FC = () => {
 
   const departments = Array.from(new Set(programs.map(p => p.department)));
 
+  if (isLoading) {
+    return <LoadingSpinner size="lg" className="min-h-screen" />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Error loading programs: {error.message}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -95,7 +98,10 @@ const Programs: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Programs</h1>
           <p className="text-gray-600">Manage academic programs and courses</p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Program
         </button>
@@ -151,23 +157,13 @@ const Programs: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900">
               {filteredPrograms.length} programs found
             </h3>
-            {selectedPrograms.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {selectedPrograms.length} selected
-                </span>
-                <button className="text-red-600 hover:text-red-800 text-sm font-medium">
-                  Delete Selected
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPrograms.map((program) => (
-              <div key={program.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+              <div key={program._id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -175,12 +171,6 @@ const Programs: React.FC = () => {
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLevelBadgeColor(program.level)}`}>
                           {program.level}
                         </span>
-                        <input
-                          type="checkbox"
-                          checked={selectedPrograms.includes(program.id)}
-                          onChange={() => handleSelectProgram(program.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">{program.name}</h3>
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">{program.description}</p>
@@ -202,27 +192,19 @@ const Programs: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex space-x-2">
-                        {program.brochureUrl && (
-                          <button className="text-sm text-blue-600 hover:text-blue-800">
-                            View Brochure
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
+                  <div className="flex justify-end space-x-2 mt-4">
+                    <button
+                      onClick={() => handleEdit(program)}
+                      className="text-blue-600 hover:text-blue-800 p-1"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(program)}
+                      className="text-red-600 hover:text-red-800 p-1"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -230,6 +212,27 @@ const Programs: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <AddProgramModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAdd}
+      />
+      
+      <EditProgramModal
+        isOpen={!!editingProgram}
+        onClose={() => setEditingProgram(null)}
+        program={editingProgram}
+        onEdit={handleEditSubmit}
+      />
+      
+      <DeleteProgramModal
+        isOpen={!!deletingProgram}
+        onClose={() => setDeletingProgram(null)}
+        onDelete={handleDeleteConfirm}
+        programName={deletingProgram?.name || ''}
+      />
     </div>
   );
 };
