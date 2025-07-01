@@ -17,7 +17,7 @@ const Programs: React.FC = () => {
 
   const { programsQuery, createProgram, updateProgram, deleteProgram } = usePrograms();
 
-  const programs = programsQuery.data?.data || [];
+  const programs = Array.isArray(programsQuery.data?.data) ? programsQuery.data.data : [];
   const isLoading = programsQuery.isLoading;
   const error = programsQuery.error;
 
