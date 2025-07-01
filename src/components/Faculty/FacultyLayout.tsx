@@ -60,7 +60,7 @@ const FacultyLayout: React.FC = () => {
       {/* Main content */}
       <div className="pl-64">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex items-center space-x-4">
               <h2 className="text-lg font-semibold text-gray-900">

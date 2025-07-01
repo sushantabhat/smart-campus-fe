@@ -25,6 +25,7 @@ import Notices from './pages/Admin/Notices';
 import AdminPrograms from './pages/Admin/Programs';
 import Analytics from './pages/Admin/Analytics';
 import Settings from './pages/Admin/Settings';
+import StudentProfile from './pages/Student/Profile';
 
 function App() {
   // Initialize authentication state
@@ -113,6 +114,7 @@ function App() {
           <Route path="calendar" element={<div className="p-6">Student Calendar Page</div>} />
           <Route path="services" element={<div className="p-6">Student Services Page</div>} />
           <Route path="programs" element={<div className="p-6">Student Programs Page</div>} />
+          <Route path="profile" element={<StudentProfile />} />
         </Route>
 
         {/* Public routes */}
