@@ -11,6 +11,7 @@ interface EditProgramModalProps {
 const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, program, onEdit }) => {
   const [form, setForm] = useState<Partial<Program>>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (program) {
@@ -52,10 +53,15 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, pr
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
     if (!validate() || !program) return;
-    onEdit(program._id, { ...form, prerequisites: (form.prerequisites || []).filter((p) => p.trim()) });
+    try {
+      await onEdit(program._id, { ...form, prerequisites: (form.prerequisites || []).filter((p) => p.trim()) });
+    } catch (err: any) {
+      setServerError(err?.response?.data?.message || 'Failed to edit program');
+    }
   };
 
   if (!isOpen || !program) return null;
@@ -66,6 +72,7 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, pr
         <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}>&times;</button>
         <h2 className="text-xl font-bold mb-4">Edit Program</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {serverError && <div className="text-red-600 text-sm mb-2">{serverError}</div>}
           <div>
             <label className="block text-sm font-medium">Name</label>
             <input name="name" value={form.name || ''} onChange={handleChange} className="w-full border rounded px-3 py-2" />

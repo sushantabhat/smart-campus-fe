@@ -47,6 +47,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ isOpen, onClose, event 
     benefits: [],
     externalLinks: []
   });
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (event) {
@@ -127,6 +128,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ isOpen, onClose, event 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
     if (!event) return;
     try {
       const payload = { ...formData };
@@ -135,8 +137,8 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ isOpen, onClose, event 
         data: payload as Partial<CreateEventRequest>
       });
       onClose();
-    } catch (error) {
-      // Error is handled by the mutation
+    } catch (error: any) {
+      setServerError(error?.response?.data?.message || 'Failed to update event');
     }
   };
 
@@ -156,6 +158,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ isOpen, onClose, event 
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {serverError && <div className="text-red-600 text-sm mb-2">{serverError}</div>}
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
