@@ -35,6 +35,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
   const [form, setForm] = useState<Partial<Notice>>(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>(initialValidationErrors);
+  const [serverError, setServerError] = useState<string | null>(null);
   const createNotice = useCreateNotice();
 
   const validateField = (name: string, value: any) => {
@@ -115,6 +116,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setServerError(null);
     if (!validateForm()) {
       setError('Please fix the errors above.');
       return;
@@ -131,7 +133,7 @@ const AddNoticeModal: React.FC<AddNoticeModalProps> = ({ isOpen, onClose, onSucc
       onClose();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create notice');
+      setServerError(err.response?.data?.message || 'Failed to create notice');
     }
   };
 

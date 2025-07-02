@@ -24,6 +24,7 @@ const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ isOpen, notice, onClo
   const [form, setForm] = useState<Partial<Notice>>({});
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>(initialValidationErrors);
+  const [serverError, setServerError] = useState<string | null>(null);
   const updateNotice = useUpdateNotice();
 
   useEffect(() => {
@@ -114,6 +115,7 @@ const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ isOpen, notice, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setServerError(null);
     if (!validateForm() || !notice) {
       setError('Please fix the errors above.');
       return;
@@ -130,7 +132,7 @@ const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ isOpen, notice, onClo
       onClose();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update notice');
+      setServerError(err.response?.data?.message || 'Failed to update notice');
     }
   };
 
@@ -275,6 +277,7 @@ const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ isOpen, notice, onClo
             <label className="text-sm text-gray-700">Pin to top</label>
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
+          {serverError && <div className="text-red-600 text-sm mb-2">{serverError}</div>}
           <div className="flex justify-end">
             <button
               type="submit"

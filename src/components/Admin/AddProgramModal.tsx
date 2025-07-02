@@ -21,6 +21,7 @@ const initialState = {
 const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAdd }) => {
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,11 +57,16 @@ const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAd
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
     if (!validate()) return;
-    onAdd({ ...form, prerequisites: form.prerequisites.filter((p) => p.trim()) });
-    setForm(initialState);
+    try {
+      await onAdd({ ...form, prerequisites: form.prerequisites.filter((p) => p.trim()) });
+      setForm(initialState);
+    } catch (err: any) {
+      setServerError(err?.response?.data?.message || 'Failed to add program');
+    }
   };
 
   if (!isOpen) return null;
@@ -71,6 +77,7 @@ const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAd
         <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}>&times;</button>
         <h2 className="text-xl font-bold mb-4">Add Program</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {serverError && <div className="text-red-600 text-sm mb-2">{serverError}</div>}
           <div>
             <label className="block text-sm font-medium">Name</label>
             <input name="name" value={form.name} onChange={handleChange} className="w-full border rounded px-3 py-2" />
