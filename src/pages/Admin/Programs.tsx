@@ -16,6 +16,7 @@ const Programs: React.FC = () => {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [deletingProgram, setDeletingProgram] = useState<{ id: string; name: string } | null>(null);
 
+  // Correctly type the Axios response
   const { programsQuery, createProgram, updateProgram, deleteProgram } = usePrograms();
 
   // Type guard for backend response
