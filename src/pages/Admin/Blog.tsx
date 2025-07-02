@@ -5,6 +5,8 @@ import type { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useBlogs } from '../../api/hooks/useBlogs';
 import { BlogPost } from '../../api/services/blogService';
+import { Eye, Pencil, Trash2, Filter, Search } from 'lucide-react';
+import ViewBlogModal from '../../components/Admin/ViewBlogModal';
 
 const AdminBlog: React.FC = () => {
   const { user } = useAuthStore();
@@ -24,6 +26,10 @@ const AdminBlog: React.FC = () => {
     credits: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewBlog, setViewBlog] = useState<BlogPost | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Auto-generate slug from title
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +59,7 @@ const AdminBlog: React.FC = () => {
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
     if (!form.title.trim()) newErrors.title = 'Title is required';
-    if (!form.slug.trim()) newErrors.slug = 'Slug is required';
+    if (!form.slug || !form.slug.trim()) newErrors.slug = 'Slug is required';
     if (!form.author.trim()) newErrors.author = 'Author is required';
     if (!form.content.trim()) newErrors.content = 'Content is required';
     if (!form.summary.trim()) newErrors.summary = 'Summary is required';
@@ -74,15 +80,17 @@ const AdminBlog: React.FC = () => {
     e.preventDefault();
     if (!validate()) return;
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (key === 'coverImage' && value) {
-        formData.append('coverImage', value as File);
-      } else if (key === 'tags') {
-        formData.append('tags', JSON.stringify(form.tags.split(',').map(t => t.trim()).filter(Boolean)));
-      } else {
-        formData.append(key, value as string);
-      }
-    });
+    formData.append('title', form.title);
+    formData.append('slug', form.slug);
+    formData.append('author', form.author);
+    formData.append('content', form.content);
+    formData.append('summary', form.summary);
+    formData.append('published', String(form.published));
+    formData.append('credits', form.credits);
+    if (form.coverImage) {
+      formData.append('coverImage', form.coverImage);
+    }
+    formData.append('tags', JSON.stringify(form.tags.split(',').map(t => t.trim()).filter(Boolean)));
     if (isEdit && editId) {
       updateBlog.mutate({ id: editId, data: formData } as any, { onSuccess: resetForm });
     } else {
@@ -114,15 +122,59 @@ const AdminBlog: React.FC = () => {
     }
   };
 
+  const handleView = (post: BlogPost) => {
+    setViewBlog(post);
+    setViewModalOpen(true);
+  };
+
   const posts = Array.isArray(blogsQuery.data?.data?.data) ? blogsQuery.data.data.data : [];
   const isLoading = blogsQuery.isLoading;
   const error = blogsQuery.error;
+
+  const filteredPosts = posts.filter((post: BlogPost) => {
+    const search = searchTerm.toLowerCase();
+    const matchesSearch =
+      post.title.toLowerCase().includes(search) ||
+      post.summary.toLowerCase().includes(search) ||
+      (post.tags && post.tags.some(tag => tag.toLowerCase().includes(search)));
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'published' && post.published) ||
+      (statusFilter === 'draft' && !post.published);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Blog Management</h1>
         <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Create Blog Post</button>
+      </div>
+      <div className="mb-6">
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search blog posts..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All Statuses</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center">
+            <Filter className="h-5 w-5" />
+          </button>
+        </div>
       </div>
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
@@ -186,7 +238,7 @@ const AdminBlog: React.FC = () => {
         <div className="text-red-600">Error loading blogs.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post: BlogPost) => (
+          {filteredPosts.map((post: BlogPost) => (
             <div key={post._id} className="bg-white rounded-lg shadow p-6 flex flex-col">
               <div className="flex-1">
                 <div className="mb-2 flex items-center gap-2">
@@ -205,14 +257,34 @@ const AdminBlog: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => handleEdit(post)} className="bg-yellow-400 text-white px-3 py-1 rounded hover:bg-yellow-500">Edit</button>
-                <button onClick={() => handleDelete(post._id!)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
+              <div className="flex gap-2 mt-2 justify-end">
+                <button
+                  title="View"
+                  className="p-2 rounded-full hover:bg-gray-100 text-blue-600"
+                  onClick={() => handleView(post)}
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+                <button
+                  title="Edit"
+                  className="p-2 rounded-full hover:bg-yellow-100 text-yellow-600"
+                  onClick={() => handleEdit(post)}
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                <button
+                  title="Delete"
+                  className="p-2 rounded-full hover:bg-red-100 text-red-600"
+                  onClick={() => handleDelete(post._id!)}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
+      <ViewBlogModal isOpen={viewModalOpen} blog={viewBlog} onClose={() => setViewModalOpen(false)} />
     </div>
   );
 };
