@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Users, Filter, Search, Heart, Share2, ChevronDown } from 'lucide-react';
-import { useAppStore } from '../store/appStore';
+import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { Event } from '../types';
+import { useEvents, useRegisterForEvent } from '../api/hooks/useEvents';
+import { Event } from '../api/types/events';
 
 const Events: React.FC = () => {
-  const { events, rsvpEvent } = useAppStore();
   const { user, isAuthenticated } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'popularity'>('date');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Use the events hook with search and category filters
+  const { data: eventsData, isLoading, error } = useEvents({
+    search: searchTerm || undefined,
+    category: selectedCategory !== 'all' ? selectedCategory : undefined,
+  });
+
+  // Use the register for event hook
+  const registerForEvent = useRegisterForEvent();
+
+  const events = eventsData?.data?.events || [];
 
   const categories = [
     { value: 'all', label: 'All Events' },
@@ -23,34 +34,36 @@ const Events: React.FC = () => {
   ];
 
   const filteredEvents = events
-    .filter(event => {
-      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           event.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
+    .sort((a: Event, b: Event) => {
       if (sortBy === 'date') {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
+        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
       }
       return b.currentAttendees - a.currentAttendees;
     });
 
   const handleRSVP = (eventId: string) => {
+    console.log("eventId", eventId);
     if (!isAuthenticated || !user) {
-      alert('Please login to RSVP for events');
+      toast.error('Please login to RSVP for events');
       return;
     }
-    rsvpEvent(eventId, user.id);
+    
+    // Prevent admin and faculty from registering for events
+    if (user.role === 'admin' || user.role === 'faculty') {
+      toast.error('Admin and faculty members cannot register for events');
+      return;
+    }
+    
+    registerForEvent.mutate(eventId);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string) => {
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(date);
+    }).format(new Date(date));
   };
 
   const getCategoryColor = (category: string) => {
@@ -63,6 +76,34 @@ const Events: React.FC = () => {
     };
     return colors[category as keyof typeof colors] || colors.general;
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading events...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <div className="text-red-600 text-xl mb-4">Error loading events</div>
+            <p className="text-gray-600">Please try again later.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -190,9 +231,9 @@ const Events: React.FC = () => {
         {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence>
-            {filteredEvents.map((event, index) => (
+            {filteredEvents.map((event: Event, index: number) => (
               <motion.div
-                key={event.id}
+                key={event._id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
@@ -203,13 +244,13 @@ const Events: React.FC = () => {
                 {/* Event Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={event.image || 'https://images.pexels.com/photos/1595391/pexels-photo-1595391.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                    src={event.images?.[0]?.url || 'https://images.pexels.com/photos/1595391/pexels-photo-1595391.jpeg?auto=compress&cs=tinysrgb&w=800'}
                     alt={event.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getCategoryColor(event.category)}`}>
-                      {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getCategoryColor(event.eventType)}`}>
+                      {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
                     </span>
                   </div>
                   <div className="absolute top-4 right-4 flex space-x-2">
@@ -235,15 +276,15 @@ const Events: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-2 text-blue-600" />
-                      {formatDate(event.date)}
+                      {formatDate(event.startDate)}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-2 text-blue-600" />
-                      {event.time}
+                      {event.startTime} - {event.endTime}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <MapPin className="h-4 w-4 mr-2 text-blue-600" />
-                      {event.location}
+                      {event.location.venue}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <Users className="h-4 w-4 mr-2 text-blue-600" />
@@ -254,7 +295,7 @@ const Events: React.FC = () => {
                   {/* Organizer */}
                   <div className="mb-4">
                     <p className="text-sm text-gray-500">
-                      Organized by <span className="font-medium text-gray-700">{event.organizer}</span>
+                      Organized by <span className="font-medium text-gray-700">{event.organizer.fullName}</span>
                     </p>
                   </div>
 
@@ -273,20 +314,27 @@ const Events: React.FC = () => {
                       )}
                     </div>
                     <button
-                      onClick={() => handleRSVP(event.id)}
-                      disabled={event.maxAttendees ? event.currentAttendees >= event.maxAttendees : false}
+                      onClick={() => handleRSVP(event._id)}
+                      disabled={
+                        (event.maxAttendees ? event.currentAttendees >= event.maxAttendees : false) ||
+                        (user ? (user.role === 'admin' || user.role === 'faculty') : false)
+                      }
                       className={`px-6 py-2 rounded-lg font-semibold transition-colors duration-200 ${
-                        user && event.rsvpUsers.includes(user.id)
+                        user && event.attendees.some(attendee => attendee.user._id === user.id)
                           ? 'bg-green-600 text-white hover:bg-green-700'
                           : event.maxAttendees && event.currentAttendees >= event.maxAttendees
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : user && (user.role === 'admin' || user.role === 'faculty')
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
                     >
-                      {user && event.rsvpUsers.includes(user.id)
+                      {user && event.attendees.some(attendee => attendee.user._id === user.id)
                         ? 'Registered'
                         : event.maxAttendees && event.currentAttendees >= event.maxAttendees
                         ? 'Full'
+                        : user && (user.role === 'admin' || user.role === 'faculty')
+                        ? 'Not Available'
                         : 'RSVP'
                       }
                     </button>

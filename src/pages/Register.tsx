@@ -68,16 +68,16 @@ const Register: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-md w-full space-y-8"
+        className="max-w-4xl w-full space-y-8"
       >
-        <div className="bg-white rounded-xl shadow-2xl p-8">
+        <div className="bg-white shadow-2xl p-12 border border-gray-200 rounded-xl">
           <div className="text-center">
-            <UserPlus className="mx-auto h-12 w-12 text-green-600" />
+            <UserPlus className="mx-auto h-12 w-12 text-blue-600" />
             <h2 className="mt-6 text-3xl font-bold text-gray-900">
               Create your account
             </h2>
@@ -97,7 +97,7 @@ const Register: React.FC = () => {
               </motion.div>
             )}
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -111,7 +111,7 @@ const Register: React.FC = () => {
                     },
                   })}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter your full name"
                 />
                 {errors.name && (
@@ -132,7 +132,7 @@ const Register: React.FC = () => {
                     },
                   })}
                   type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter your email"
                 />
                 {errors.email && (
@@ -146,7 +146,7 @@ const Register: React.FC = () => {
                 </label>
                 <select
                   {...register('role', { required: 'Role is required' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select your role</option>
                   <option value="student">Student</option>
@@ -163,7 +163,7 @@ const Register: React.FC = () => {
                 </label>
                 <select
                   {...register('department', { required: 'Department is required' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select department</option>
                   {departments.map((dept) => (
@@ -178,7 +178,7 @@ const Register: React.FC = () => {
               </div>
 
               {watchRole === 'student' && (
-                <div>
+                <div className="md:col-span-2">
                   <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-1">
                     Student ID
                   </label>
@@ -187,7 +187,7 @@ const Register: React.FC = () => {
                       required: watchRole === 'student' ? 'Student ID is required' : false,
                     })}
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your student ID"
                   />
                   {errors.studentId && (
@@ -197,7 +197,7 @@ const Register: React.FC = () => {
               )}
 
               {watchRole === 'faculty' && (
-                <div>
+                <div className="md:col-span-2">
                   <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-1">
                     Employee ID
                   </label>
@@ -206,7 +206,7 @@ const Register: React.FC = () => {
                       required: watchRole === 'faculty' ? 'Employee ID is required' : false,
                     })}
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your employee ID"
                   />
                   {errors.employeeId && (
@@ -233,7 +233,7 @@ const Register: React.FC = () => {
                       },
                     })}
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Create a strong password"
                   />
                   <button
@@ -265,7 +265,7 @@ const Register: React.FC = () => {
                         value === watchPassword || 'Passwords do not match',
                     })}
                     type={showConfirmPassword ? 'text' : 'password'}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Confirm your password"
                   />
                   <button
@@ -292,11 +292,11 @@ const Register: React.FC = () => {
                   required: 'You must agree to the terms and conditions',
                 })}
                 type="checkbox"
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="agreeTerms" className="ml-2 block text-sm text-gray-700">
                 I agree to the{' '}
-                <Link to="/terms" className="text-green-600 hover:text-green-800">
+                <Link to="/terms" className="text-blue-600 hover:text-blue-800">
                   Terms and Conditions
                 </Link>
               </label>
@@ -308,7 +308,7 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className="w-full flex justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {isSubmitting ? 'Creating account...' : 'Create account'}
             </button>
@@ -318,7 +318,7 @@ const Register: React.FC = () => {
                 Already have an account?{' '}
                 <Link
                   to="/login"
-                  className="font-medium text-green-600 hover:text-green-800 transition-colors duration-200"
+                  className="font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200"
                 >
                   Sign in here
                 </Link>
