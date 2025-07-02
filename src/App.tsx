@@ -25,6 +25,7 @@ import Notices from './pages/Admin/Notices';
 import AdminPrograms from './pages/Admin/Programs';
 import Analytics from './pages/Admin/Analytics';
 import Settings from './pages/Admin/Settings';
+import AdminBlog from './pages/Admin/Blog';
 
 function App() {
   // Initialize authentication state
@@ -74,6 +75,7 @@ function App() {
           <Route path="events" element={<AdminEvents />} />
           <Route path="notices" element={<Notices />} />
           <Route path="programs" element={<AdminPrograms />} />
+          <Route path="blog" element={<AdminBlog />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
         </Route>
