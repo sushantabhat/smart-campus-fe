@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import ReactQuill from 'react-quill';
-import type { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useBlogs } from '../../api/hooks/useBlogs';
 import { BlogPost } from '../../api/services/blogService';

@@ -10,4 +10,6 @@ export interface Program {
   brochureUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+  isPublished: boolean;
+  status: 'draft' | 'published' | 'archived';
 } 
