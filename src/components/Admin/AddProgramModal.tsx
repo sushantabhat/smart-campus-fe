@@ -15,7 +15,9 @@ const initialState = {
   description: '',
   prerequisites: [''],
   image: '',
-  brochureUrl: ''
+  brochureUrl: '',
+  isPublished: false,
+  status: 'draft' as 'draft' | 'published' | 'archived',
 };
 
 const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAdd }) => {
@@ -62,7 +64,7 @@ const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAd
     setServerError(null);
     if (!validate()) return;
     try {
-      await onAdd({ ...form, prerequisites: form.prerequisites.filter((p) => p.trim()) });
+      await onAdd({ ...form, prerequisites: form.prerequisites.filter((p) => p.trim()), isPublished: form.status === 'published', status: form.status });
       setForm(initialState);
     } catch (err: any) {
       setServerError(err?.response?.data?.message || 'Failed to add program');
@@ -125,6 +127,19 @@ const AddProgramModal: React.FC<AddProgramModalProps> = ({ isOpen, onClose, onAd
           <div>
             <label className="block text-sm font-medium">Brochure URL</label>
             <input name="brochureUrl" value={form.brochureUrl} onChange={handleChange} className="w-full border rounded px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Status</label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Cancel</button>

@@ -17,7 +17,7 @@ const Programs: React.FC = () => {
   const [deletingProgram, setDeletingProgram] = useState<{ id: string; name: string } | null>(null);
 
   // Correctly type the Axios response
-  const { programsQuery, createProgram, updateProgram, deleteProgram } = usePrograms();
+  const { programsQuery, createProgram, updateProgram, deleteProgram, publishProgram, unpublishProgram } = usePrograms();
 
   // Type guard for backend response
   function isBackendProgramsResponse(obj: any): obj is { success: boolean; message: string; data: Program[] } {
@@ -87,6 +87,17 @@ const Programs: React.FC = () => {
   };
 
   const departments = Array.from(new Set(programs.map((p: Program) => p.department)));
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published':
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Published</span>;
+      case 'archived':
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Archived</span>;
+      default:
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Draft</span>;
+    }
+  };
 
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -181,6 +192,7 @@ const Programs: React.FC = () => {
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLevelBadgeColor(program.level)}`}>
                           {program.level}
                         </span>
+                        {getStatusBadge(program.status)}
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">{program.name}</h3>
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">{program.description}</p>
@@ -199,6 +211,23 @@ const Programs: React.FC = () => {
                           {program.prerequisites.length} prerequisites
                         </div>
                       </div>
+                    </div>
+                    <div className="ml-4 flex flex-col items-end space-y-2">
+                      {program.isPublished ? (
+                        <button
+                          onClick={() => unpublishProgram.mutate(program._id)}
+                          className="bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-red-700"
+                        >
+                          Unpublish
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => publishProgram.mutate(program._id)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-blue-700"
+                        >
+                          Publish
+                        </button>
+                      )}
                     </div>
                   </div>
                   

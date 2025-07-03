@@ -58,7 +58,7 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, pr
     setServerError(null);
     if (!validate() || !program) return;
     try {
-      await onEdit(program._id, { ...form, prerequisites: (form.prerequisites || []).filter((p) => p.trim()) });
+      await onEdit(program._id, { ...form, prerequisites: (form.prerequisites || []).filter((p) => p.trim()), isPublished: (form.status === 'published'), status: form.status });
     } catch (err: any) {
       setServerError(err?.response?.data?.message || 'Failed to edit program');
     }
@@ -68,7 +68,7 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, pr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
         <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}>&times;</button>
         <h2 className="text-xl font-bold mb-4">Edit Program</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -120,6 +120,19 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({ isOpen, onClose, pr
           <div>
             <label className="block text-sm font-medium">Brochure URL</label>
             <input name="brochureUrl" value={form.brochureUrl || ''} onChange={handleChange} className="w-full border rounded px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Status</label>
+            <select
+              name="status"
+              value={form.status || 'draft'}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Cancel</button>
