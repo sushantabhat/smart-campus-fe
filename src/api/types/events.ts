@@ -63,6 +63,7 @@ export interface Event {
     phone?: string;
     website?: string;
   };
+  isPublished: boolean;
   status: 'draft' | 'published' | 'cancelled' | 'completed' | 'postponed';
   visibility: 'public' | 'private' | 'restricted';
   priority: 'low' | 'medium' | 'high' | 'urgent';

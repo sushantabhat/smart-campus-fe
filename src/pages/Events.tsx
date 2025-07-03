@@ -22,7 +22,7 @@ const Events: React.FC = () => {
   // Use the register for event hook
   const registerForEvent = useRegisterForEvent();
 
-  const events = eventsData?.data?.events || [];
+  const events = (eventsData?.data?.events || [])?.filter((event: Event) => event?.isPublished === true);
 
   const categories = [
     { value: 'all', label: 'All Events' },
