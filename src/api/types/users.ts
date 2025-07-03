@@ -67,4 +67,11 @@ export interface CreateUserResponse {
   message: string;
   data: UserData;
   timestamp: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+  data: UserData;
+  timestamp: string;
 } 

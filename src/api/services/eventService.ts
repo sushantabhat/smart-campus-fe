@@ -71,5 +71,17 @@ export const eventService = {
   async getOrganizedEvents(): Promise<EventsResponse> {
     const response = await apiClient.get('/events/user/organized');
     return response.data;
+  },
+
+  // Publish event
+  async publishEvent(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.patch(`/events/${id}/publish`);
+    return response.data;
+  },
+
+  // Unpublish event
+  async unpublishEvent(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.patch(`/events/${id}/unpublish`);
+    return response.data;
   }
 }; 

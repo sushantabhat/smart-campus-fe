@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Calendar, MapPin, Users, Eye, X } from 'lucide-react';
-import { useEvents } from '../../api/hooks/useEvents';
+import { toast } from 'react-hot-toast';
+import { useEvents, usePublishEvent, useUnpublishEvent } from '../../api/hooks/useEvents';
 import { Event } from '../../api/types/events';
 import AddEventModal from '../../components/Admin/AddEventModal';
 import EditEventModal from '../../components/Admin/EditEventModal';
@@ -35,6 +36,9 @@ const Events: React.FC = () => {
     status: statusFilter
   });
 
+  const publishEventMutation = usePublishEvent();
+  const unpublishEventMutation = useUnpublishEvent();
+
   const events = eventsData?.data?.events || [];
   const pagination = eventsData?.data?.pagination;
 
@@ -44,6 +48,26 @@ const Events: React.FC = () => {
 
   const handleDelete = (event: Event) => {
     setDeletingEvent({ id: event._id, title: event.title });
+  };
+
+  const handlePublish = async (event: Event) => {
+    try {
+      await publishEventMutation.mutateAsync(event._id);
+      toast.success('Event published successfully');
+    } catch (error) {
+      console.error('Failed to publish event:', error);
+      toast.error('Failed to publish event. Please try again.');
+    }
+  };
+
+  const handleUnpublish = async (event: Event) => {
+    try {
+      await unpublishEventMutation.mutateAsync(event._id);
+      toast.success('Event unpublished successfully');
+    } catch (error) {
+      console.error('Failed to unpublish event:', error);
+      toast.error('Failed to unpublish event. Please try again.');
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -63,28 +87,7 @@ const Events: React.FC = () => {
     }
   };
 
-  const getEventTypeBadgeColor = (eventType: string) => {
-    switch (eventType) {
-      case 'academic':
-        return 'bg-blue-100 text-blue-800';
-      case 'cultural':
-        return 'bg-purple-100 text-purple-800';
-      case 'sports':
-        return 'bg-green-100 text-green-800';
-      case 'technical':
-        return 'bg-orange-100 text-orange-800';
-      case 'social':
-        return 'bg-pink-100 text-pink-800';
-      case 'workshop':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'seminar':
-        return 'bg-teal-100 text-teal-800';
-      case 'conference':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -192,8 +195,35 @@ const Events: React.FC = () => {
             key={event._id}
             className="bg-white rounded-2xl shadow p-7 flex flex-col border border-gray-100 hover:shadow-xl transition-shadow"
           >
+            {/* Event Image */}
+            {event.imageUrl && (
+              <div className="mb-4">
+                <img
+                  src={event.imageUrl}
+                  alt={event.title}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between mb-4">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${eventTypeColors[event.eventType] || 'bg-gray-50 text-gray-700'} border border-gray-200`}>{event.eventType}</span>
+              {event.status === 'draft' ? (
+                <button
+                  onClick={() => handlePublish(event)}
+                  disabled={publishEventMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1 rounded-md transition-colors text-xs font-medium text-white"
+                >
+                  Publish
+                </button>
+              ) : event.status === 'published' ? (
+                <button
+                  onClick={() => handleUnpublish(event)}
+                  disabled={unpublishEventMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1 rounded-md transition-colors text-xs font-medium text-white"
+                >
+                  Unpublish
+                </button>
+              ) : null}
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-1 line-clamp-2">{event.title}</h3>
             <p className="text-gray-500 mb-4 line-clamp-3 text-sm">{event.shortDescription || event.description}</p>
@@ -217,27 +247,27 @@ const Events: React.FC = () => {
             <hr className="my-3" />
             <div className="flex items-center justify-between mt-auto">
               <span className="text-xs text-gray-400">Created by {event.organizer?.fullName || event.organizer?.email || 'Unknown'}</span>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <button
                   className="text-blue-600 hover:text-blue-900"
                   title="View Event"
                   onClick={() => setViewedEvent(event)}
                 >
-                  <Eye className="h-5 w-5" />
+                  <Eye className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleEdit(event)}
                   className="text-green-600 hover:text-green-900"
                   title="Edit Event"
                 >
-                  <Edit className="h-5 w-5" />
+                  <Edit className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(event)}
                   className="text-red-600 hover:text-red-900"
                   title="Delete Event"
                 >
-                  <Trash2 className="h-5 w-5" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>

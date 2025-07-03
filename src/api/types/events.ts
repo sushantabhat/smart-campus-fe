@@ -46,6 +46,7 @@ export interface Event {
   isRegistrationRequired: boolean;
   isRegistrationOpen: boolean;
   tags?: string[];
+  imageUrl?: string;
   images?: Array<{
     url: string;
     caption?: string;
@@ -99,6 +100,7 @@ export interface CreateEventRequest {
   isRegistrationRequired?: boolean;
   isRegistrationOpen?: boolean;
   tags?: string[];
+  imageUrl?: string;
   contactInfo?: {
     email?: string;
     phone?: string;

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { Toaster, toast } from 'react-hot-toast';
 
 interface LoginForm {
   email: string;
@@ -13,7 +14,6 @@ interface LoginForm {
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState('');
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
   
@@ -23,40 +23,43 @@ const Login: React.FC = () => {
     formState: { errors },
   } = useForm<LoginForm>();
 
-  const onSubmit = async (data: LoginForm) => {
-    setLoginError('');
+  const onSubmit: SubmitHandler<LoginForm> = async (data) => {
     try {
       const success = await login(data.email, data.password);
       if (success) {
-        // Get user data from store to determine role
-        const user = useAuthStore.getState().user;
-        if (user) {
-          // Redirect based on user role
-          switch (user.role) {
-            case 'admin':
-              navigate('/admin');
-              break;
-            case 'faculty':
-              navigate('/faculty');
-              break;
-            case 'student':
-              navigate('/student');
-              break;
-            default:
-              navigate('/dashboard');
+        toast.success('Login successful!');
+        // Use a small delay to ensure the store is updated
+        setTimeout(() => {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser) {
+            // Redirect based on user role
+            switch (currentUser.role) {
+              case 'admin':
+                navigate('/admin');
+                break;
+              case 'faculty':
+                navigate('/faculty');
+                break;
+              case 'student':
+                navigate('/student');
+                break;
+              default:
+                navigate('/dashboard');
+            }
           }
-        }
+        }, 100);
       } else {
-        setLoginError('Invalid email or password');
+        toast.error('Invalid email or password');
       }
     } catch (error) {
-      setLoginError('An error occurred during login');
+      toast.error('An error occurred during login');
       console.error('Login failed:', error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Toaster position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -75,15 +78,6 @@ const Login: React.FC = () => {
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {loginError && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm"
-              >
-                {loginError}
-              </motion.div>
-            )}
 
             <div className="space-y-4">
               <div>

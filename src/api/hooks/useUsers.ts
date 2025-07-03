@@ -90,10 +90,12 @@ export const useResetPassword = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => userService.resetPassword(id),
-    onSuccess: (_, userId) => {
-      // Invalidate specific user
-      queryClient.invalidateQueries({ queryKey: ['users', userId] });
+    mutationFn: async ({ userId, newPassword, confirmPassword }: { userId: string; newPassword: string; confirmPassword: string }) => {
+      const response = await userService.resetPassword(userId, newPassword, confirmPassword);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }; 

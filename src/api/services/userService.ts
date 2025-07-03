@@ -4,7 +4,8 @@ import {
   UpdateUserRequest, 
   UsersResponse, 
   UserResponse,
-  CreateUserResponse 
+  CreateUserResponse,
+  ResetPasswordResponse
 } from '../types/users';
 
 export const userService = {
@@ -43,8 +44,12 @@ export const userService = {
     return response.data;
   },
 
-  async resetPassword(id: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ success: boolean; message: string }>(`/users/${id}/reset-password`);
+  async resetPassword(userId: string, newPassword: string, confirmPassword: string): Promise<ResetPasswordResponse> {
+    const response = await apiClient.post<ResetPasswordResponse>('/auth/reset-password', {
+      userId,
+      newPassword,
+      confirmPassword
+    });
     return response.data;
   },
 }; 

@@ -121,4 +121,26 @@ export const useOrganizedEvents = () => {
     queryFn: () => eventService.getOrganizedEvents(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+};
+
+export const usePublishEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventId: string) => eventService.publishEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+};
+
+export const useUnpublishEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventId: string) => eventService.unpublishEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
 }; 
