@@ -116,6 +116,23 @@ const Events: React.FC = () => {
     other: 'bg-gray-50 text-gray-700',
   };
 
+  const getEventImage = (event: Event) => {
+    // First try to get the primary image from the images array
+    const primaryImage = event.images?.find(img => img.isPrimary)?.url;
+    if (primaryImage) return primaryImage;
+    
+    // Fallback to first image in array
+    if (event.images && event.images.length > 0) {
+      return event.images[0].url;
+    }
+    
+    // Fallback to legacy imageUrl
+    if (event.imageUrl) return event.imageUrl;
+    
+    // Final fallback to default image
+    return 'https://images.pexels.com/photos/1595391/pexels-photo-1595391.jpeg?auto=compress&cs=tinysrgb&w=800';
+  };
+
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
@@ -196,12 +213,17 @@ const Events: React.FC = () => {
             className="bg-white rounded-2xl shadow p-7 flex flex-col border border-gray-100 hover:shadow-xl transition-shadow"
           >
             {/* Event Image */}
-            {event.imageUrl && (
+            {((event.images && event.images.length > 0) || event.imageUrl) && (
               <div className="mb-4">
                 <img
-                  src={event.imageUrl}
+                  src={getEventImage(event)}
                   alt={event.title}
                   className="w-full h-48 object-cover rounded-lg"
+                  onError={(e) => {
+                    // Fallback to default image if the image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.pexels.com/photos/1595391/pexels-photo-1595391.jpeg?auto=compress&cs=tinysrgb&w=800';
+                  }}
                 />
               </div>
             )}
