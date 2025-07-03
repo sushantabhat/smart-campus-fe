@@ -75,13 +75,13 @@ export const eventService = {
 
   // Publish event
   async publishEvent(id: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.patch(`/events/${id}/publish`);
+    const response = await apiClient.put(`/events/${id}/publish`, { isPublished: true });
     return response.data;
   },
 
   // Unpublish event
   async unpublishEvent(id: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.patch(`/events/${id}/unpublish`);
+    const response = await apiClient.put(`/events/${id}/publish`, { isPublished: false });
     return response.data;
   }
 }; 

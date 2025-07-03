@@ -207,7 +207,7 @@ const Events: React.FC = () => {
             )}
             <div className="flex items-center justify-between mb-4">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${eventTypeColors[event.eventType] || 'bg-gray-50 text-gray-700'} border border-gray-200`}>{event.eventType}</span>
-              {event.status === 'draft' ? (
+              {!event.isPublished ? (
                 <button
                   onClick={() => handlePublish(event)}
                   disabled={publishEventMutation.isPending}
@@ -215,7 +215,7 @@ const Events: React.FC = () => {
                 >
                   Publish
                 </button>
-              ) : event.status === 'published' ? (
+              ) : event.isPublished ? (
                 <button
                   onClick={() => handleUnpublish(event)}
                   disabled={unpublishEventMutation.isPending}
@@ -242,6 +242,9 @@ const Events: React.FC = () => {
               </div>
               <div className="flex items-center text-sm text-gray-600">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(event.status)} border border-gray-200`}>{event.status}</span>
+                <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${event.isPublished ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} border border-gray-200`}>
+                  {event.isPublished ? 'Published' : 'Unpublished'}
+                </span>
               </div>
             </div>
             <hr className="my-3" />
